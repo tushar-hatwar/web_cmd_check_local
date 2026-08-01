@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { analyzeAvailability } from '../api/deepseek';
 import type { DeepSeekResponse } from '../api/deepseek';
+import { ShowtimesPanel } from './ShowtimesPanel';
 import { Sparkles, Calendar, Clock, Users, AlertTriangle, CheckCircle2, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,10 +11,11 @@ export function AIAnalysisPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<DeepSeekResponse | null>(null);
+  const [activeSlot, setActiveSlot] = useState<{ day: string; time: string } | null>(null);
 
   const handleAnalyze = async () => {
     if (!store.apiKey) {
-      setError('Please configure your DeepSeek API key in ⚙️ Settings first.');
+      setError('Please configure your Gemini or DeepSeek API key in ⚙️ Settings first.');
       return;
     }
     if (!store.movieDetails.name) {
@@ -30,6 +32,7 @@ export function AIAnalysisPanel() {
     try {
       const response = await analyzeAvailability(store.apiKey, store.movieDetails, store.participants, store.preferences);
       setResult(response);
+      setActiveSlot(response.recommended_show);
     } catch (err: any) {
       setError(err.message || 'Failed to analyze. Check your API key and try again.');
     } finally {
@@ -38,9 +41,10 @@ export function AIAnalysisPanel() {
   };
 
   const handleBookTickets = () => {
-    if (!result) return;
-    const msg = `✅ Booking ${store.movieDetails.ticketCount} ticket(s) for "${store.movieDetails.name}" on ${result.recommended_show.day} at ${result.recommended_show.time}.\n\nIntegration with BookMyShow/District can be added here!`;
-    alert(msg);
+    const el = document.getElementById('live-showtimes-panel');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const scoreColor = (score: number) => {
@@ -152,6 +156,44 @@ export function AIAnalysisPanel() {
                 <Ticket size={18} /> Book {store.movieDetails.ticketCount} Ticket{store.movieDetails.ticketCount > 1 ? 's' : ''} Now
               </button>
             </div>
+            
+            <ShowtimesPanel
+              activeSlot={activeSlot || result.recommended_show}
+              movie={store.movieDetails.name}
+              city={store.movieDetails.city}
+              language={store.movieDetails.language}
+              ticketCount={store.movieDetails.ticketCount}
+              onNextSlot={() => {
+                if (!result.alternative_slots) return;
+                const currentSlot = activeSlot || result.recommended_show;
+                const matchSlot = (a: { day: string; time: string }, b: { day: string; time: string }) => {
+                  if (a.day.toLowerCase() !== b.day.toLowerCase()) return false;
+                  const tA = a.time.toLowerCase().split(/[\s(]/)[0];
+                  const tB = b.time.toLowerCase().split(/[\s(]/)[0];
+                  return tA === tB;
+                };
+                const currentIdx = result.alternative_slots.findIndex(s => matchSlot(s, currentSlot));
+                const nextIdx = currentIdx === -1 ? 0 : currentIdx + 1;
+                if (nextIdx < result.alternative_slots.length) {
+                   setActiveSlot(result.alternative_slots[nextIdx]);
+                }
+              }}
+              onExhausted={() => {
+                if (!result.alternative_slots) return;
+                const currentSlot = activeSlot || result.recommended_show;
+                const matchSlot = (a: { day: string; time: string }, b: { day: string; time: string }) => {
+                  if (a.day.toLowerCase() !== b.day.toLowerCase()) return false;
+                  const tA = a.time.toLowerCase().split(/[\s(]/)[0];
+                  const tB = b.time.toLowerCase().split(/[\s(]/)[0];
+                  return tA === tB;
+                };
+                const currentIdx = result.alternative_slots.findIndex(s => matchSlot(s, currentSlot));
+                const nextIdx = currentIdx === -1 ? 0 : currentIdx + 1;
+                if (nextIdx < result.alternative_slots.length) {
+                   setActiveSlot(result.alternative_slots[nextIdx]);
+                }
+              }}
+            />
 
             {/* Alternatives */}
             {result.alternative_slots && result.alternative_slots.length > 0 && (
@@ -177,7 +219,18 @@ export function AIAnalysisPanel() {
                           <div className={`text-sm font-medium ${scoreColor(slot.compromise_score)}`}>{slot.compromise_score}</div>
                         </div>
                       </div>
-                      <p className="text-sm text-zinc-500 md:text-right md:max-w-xs">{slot.reason}</p>
+                      <div className="flex flex-col md:items-end gap-2 mt-3 md:mt-0">
+                        <p className="text-sm text-zinc-500 md:text-right md:max-w-xs">{slot.reason}</p>
+                        <button
+                          onClick={() => {
+                            setActiveSlot({ day: slot.day, time: slot.time });
+                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                          }}
+                          className="text-xs font-semibold text-blue-400 hover:text-blue-300 underline underline-offset-2 self-start md:self-end"
+                        >
+                          Check Showtimes
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

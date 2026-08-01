@@ -46,16 +46,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             <div className="p-5">
-              <label className="block text-sm font-medium text-zinc-200 mb-1">DeepSeek API Key</label>
+              <label className="block text-sm font-medium text-zinc-200 mb-1">AI API Key (Gemini or DeepSeek)</label>
               <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
-                Your API key is stored only in your browser's local storage. It is never sent to any third-party server other than the official <span className="text-blue-400">DeepSeek API</span>.
+                Paste your <span className="text-blue-400 font-medium">Google Gemini API key</span> (starts with <code className="bg-zinc-800 px-1 rounded">AIza...</code>) or a <span className="text-purple-400 font-medium">DeepSeek API key</span> (starts with <code className="bg-zinc-800 px-1 rounded">sk-...</code>). Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-400 underline">aistudio.google.com</a>.
               </p>
 
               <div className="relative">
                 <input
                   type={showKey ? 'text' : 'password'}
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2.5 pr-12 text-zinc-100 focus:outline-none focus:border-blue-500 transition-colors font-mono text-sm placeholder:text-zinc-600"
-                  placeholder="sk-..."
+                  placeholder="AIza... (Gemini) or sk-... (DeepSeek)"
                   value={tempKey}
                   onChange={(e) => setTempKey(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
