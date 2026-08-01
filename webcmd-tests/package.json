@@ -1,0 +1,19 @@
+{
+  "name": "webcmd-tests",
+  "version": "1.0.0",
+  "description": "Standalone WebCMD test harness for SeatSync adapter validation and fixture capture",
+  "type": "module",
+  "main": "src/wrapper.js",
+  "scripts": {
+    "test": "node test/run-all.js",
+    "verify-fixtures": "node test/verify-fixtures.js"
+  },
+  "keywords": [
+    "webcmd",
+    "seatsync",
+    "test-harness",
+    "district"
+  ],
+  "author": "",
+  "license": "ISC"
+}
