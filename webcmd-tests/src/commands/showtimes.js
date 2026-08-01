@@ -18,6 +18,9 @@ export async function testShowtimes(movie = 'Kalki 2898 AD', options = {}, saveA
   if (options.city) {
     args.push('--city', options.city);
   }
+  if (options.date) {
+    args.push('--date', options.date);
+  }
   if (options.cinema) {
     args.push('--cinema', options.cinema);
   }
