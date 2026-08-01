@@ -76,6 +76,8 @@ app.post('/api/showtimes', async (req, res) => {
 // POST /api/seats — Get available seats for a show
 // Body: { showId, formatId?, contentId?, count?, together? }
 // ──────────────────────────────────────────────────────────────
+let seatQueue = Promise.resolve();
+
 app.post('/api/seats', async (req, res) => {
   const { showId, formatId, contentId, count = 2, together = true } = req.body;
   if (!showId) return res.status(400).json({ ok: false, error: 'showId is required.' });
@@ -85,8 +87,15 @@ app.post('/api/seats', async (req, res) => {
   if (formatId) args.push('--format-id', formatId);
   if (contentId) args.push('--content-id', contentId);
 
-  const result = await runWebcmd(args, { timeoutMs: 45000 });
-  res.json(result);
+  // Queue seat fetching commands to prevent Playwright / webcmd concurrency crashes
+  seatQueue = seatQueue.then(async () => {
+    try {
+      const result = await runWebcmd(args, { timeoutMs: 45000 });
+      res.json(result);
+    } catch (err) {
+      res.json({ ok: false, error: String(err) });
+    }
+  });
 });
 
 // ──────────────────────────────────────────────────────────────
