@@ -1,0 +1,71 @@
+kind: workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+  actions:
+    - kind: SetVariable
+      id: action-1770884113256
+      variable: Local.user_input
+      value: =System.LastMessage.Text
+    - kind: InvokeAzureAgent
+      id: action-generator-id
+      agent:
+        name: title-description-generator
+      conversationId: =System.ConversationId
+      input:
+        messages: =System.LastMessage
+      output:
+        autoSend: true
+        messages: Local.generated_title_description
+    - kind: InvokeAzureAgent
+      id: action-refiner-id
+      agent:
+        name: title-description-quality-refiner
+      conversationId: =System.ConversationId
+      input:
+        messages: =Local.generated_title_description
+      output:
+        autoSend: true
+        messages: Local.refined_title_description
+    - kind: Question
+      variable: Local.user_approval_response
+      id: action-human-approval
+      entity: StringPrebuiltEntity
+      skipQuestionMode: SkipOnFirstExecutionIfVariableHasValue
+      prompt: |
+        Do you approve this YouTube title and description?
+        ------------------------------
+        "{Last(Local.refined_title_description).Text}
+        "
+        ------------------------------
+        Type “yes” to approve, or provide feedback to regenerate.
+    - kind: ConditionGroup
+      conditions:
+        - condition: =Local.user_approval_response = "yes"
+          actions:
+            - kind: SendActivity
+              activity: |-
+                Here is the title and description for the YouTube video:
+                -----------------------------
+                {Last(Local.refined_title_description).Text}
+              id: action-send-message
+            - kind: EndConversation
+              id: action-1770884916562
+          id: if-action-1770883902610-0
+      id: action-if-else-id
+      elseActions:
+        - kind: SetVariable
+          id: action-1770884212616
+          variable: Local.user_input
+          value: |
+            =Concatenate(    Last(Local.generated_title_description).Text,
+            Last(Local.refined_title_description).Text,
+            Local.user_approval_response
+            )
+        - kind: GotoAction
+          actionId: action-generator-id
+          id: action-1770884439700
+id: ""
+name: content-approval-pipeline
+description: ""
+
